@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
+#include <vector>
 #include "common.h"
 
 //
@@ -39,21 +40,83 @@ int main( int argc, char **argv )
     //  simulate a number of time steps
     //
     double simulation_time = read_timer( );
-	
+
+    double size = sqrt( 0.0005 * n );
+    int buckets_dim = ceil(size/(2*0.01));
+    std::vector<int> buckets[buckets_dim][buckets_dim];
+
+
     for( int step = 0; step < NSTEPS; step++ )
     {
-	navg = 0;
-        davg = 0.0;
-	dmin = 1.0;
+	 navg = 0;
+     davg = 0.0;
+	 dmin = 1.0;
+
         //
         //  compute forces
         //
-        for( int i = 0; i < n; i++ )
-        {
+
+        for ( int i = 0; i < n; i++)
+        {   
             particles[i].ax = particles[i].ay = 0;
-            for (int j = 0; j < n; j++ )
-				apply_force( particles[i], particles[j],&dmin,&davg,&navg);
+            int xbucket = floor(particles[i].x/(2*0.01));
+            int ybucket = floor(particles[i].y/(2*0.01));
+            buckets[xbucket][ybucket].push_back(i);
         }
+
+        
+        for( int xbucket = 0; xbucket < buckets_dim; xbucket ++){
+            for( int ybucket = 0; ybucket < buckets_dim; ybucket ++){
+                for(int k = 0; k < buckets[xbucket][ybucket].size(); k++){
+
+                    int i = buckets[xbucket][ybucket].at(k);
+                    int xmin,xmax,ymin,ymax;
+                    if(xbucket > 0){xmin = -1;}
+                    else{ xmin = 0;}
+                    if(xbucket < buckets_dim-1){ xmax = 1;}
+                    else{ xmax = 0;}
+
+                    if(ybucket > 0){ ymin = -1;}
+                    else{ ymin = 0;}
+                    if(ybucket < buckets_dim-1){ ymax = 1;}
+                    else{ ymax = 0;}
+                    //printf("%d %d %d %d\n",xmin, xmax, ymin, ymax);
+                    for( int nbucketx = xmin; nbucketx <= xmax; nbucketx++){
+                        for( int nbuckety = ymin; nbuckety <= ymax; nbuckety++){
+                            //printf("%d %d %d\n",nbucketx,nbucketx,buckets[xbucket+nbucketx][ybucket+nbuckety].size());
+                            for(int l = 0; l < buckets[xbucket+nbucketx][ybucket+nbuckety].size(); l++){
+                                if(l != k || nbucketx!= 0 || nbuckety != 0){
+                                    
+                                    //printf("applying some force %d %d %d %d\n",l,k,nbuckety,nbucketx);
+                                    
+                                    apply_force(particles[i],particles[buckets[xbucket+nbucketx][ybucket+nbuckety].at(l)],&dmin,&davg,&navg);
+                                }
+                                
+                            }
+
+                        }
+                    }
+
+                }
+            }
+            
+        }
+        for( int xbucket = 0; xbucket < buckets_dim; xbucket ++){
+                for( int ybucket = 0; ybucket < buckets_dim; ybucket ++){  
+                    buckets[xbucket][ybucket].clear();
+                }
+            }
+
+
+
+
+
+        // for( int i = 0; i < n; i++ )
+        // {
+        //     particles[i].ax = particles[i].ay = 0;
+        //     for (int j = 0; j < n; j++ )
+		// 		apply_force( particles[i], particles[j],&dmin,&davg,&navg);
+        // }
  
         //
         //  move particles

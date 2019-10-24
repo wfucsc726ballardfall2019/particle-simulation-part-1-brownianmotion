@@ -42,8 +42,7 @@ int main( int argc, char **argv )
     //
     // creating bins
     //
-    double diameter = 2 * cutoff;
-    int dim = (int)ceil(size / diameter);
+    int dim = (int)ceil(size / cutoff);
     vector<int> bin[dim][dim];
 
 
@@ -63,29 +62,53 @@ int main( int argc, char **argv )
         //
         for( int i = 0; i < n; i++ )
         {
-            int row = (int)floor(particles[i].x / diameter);
-            int col = (int)floor(particles[i].y / diameter);
+            int row = (int)floor(particles[i].x / cutoff);
+            int col = (int)floor(particles[i].y / cutoff);
             bin[row][col].push_back(i);
 
         }
 
-        
+
         for( int i = 0; i < n; i++ )
         {
             particles[i].ax = particles[i].ay = 0;
-            int row = (int)floor(particles[i].x / diameter);
-            int col = (int)floor(particles[i].y / diameter);
-            for ( int r = row-1; r < row+1; r++) {
-                for ( int c = col-1; c < col+1; c++) {
-                    if (0<r && r<dim && 0<c && c<dim) {
-                        for (int b = 0; b < bin[r][c].size(); b++) {
-                            int j = bin[r][c][b];
-				            apply_force( particles[i], particles[j],&dmin,&davg,&navg);
+            int row = (int)floor(particles[i].x / cutoff);
+            int col = (int)floor(particles[i].y / cutoff);
+            for ( int r = row-1; r <= row+1 && r < dim; r++) {
+                if (r >= 0) {
+                    for ( int c = col-1; c <= col+1 && c < dim; c++) {
+                        if (c >= 0) {
+                            //printf("r:%d, c:%d\n", r, c);
+                            for (int b = 0; b < bin[r][c].size(); b++) {
+                                int j = bin[r][c].at(b);
+				                apply_force( particles[i], particles[j],&dmin,&davg,&navg);
+                            }
                         }
                     }
                 }
             }
         }
+
+        /*
+        for (int row = 0; row < dim; row++) {
+            for (int col = 0; col < dim; col++) {
+                for (int b = 0; b < bin[row][col].size(); b++) {
+                    int i = bin[row][col][b];
+                    for(int r = row-1; r < row+1; r++) {
+                        for (int c = col-1; c < col+1; c++) {
+                            if (0<r && r<dim && 0<c && c<dim) {
+                                for (int d = 0; d < bin[r][c].size(); d++) {
+                                    int j = bin[r][c][d];
+				                    apply_force( particles[i], particles[j],&dmin,&davg,&navg);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        */
+
 
         for( int i = 0; i < dim; i++ )
         {

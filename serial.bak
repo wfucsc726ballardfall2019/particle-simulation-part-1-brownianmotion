@@ -4,10 +4,6 @@
 #include <math.h>
 #include "common.h"
 
-#include <vector>
-using namespace std;
-
-
 //
 //  benchmarking program
 //
@@ -40,14 +36,6 @@ int main( int argc, char **argv )
     init_particles( n, particles );
     
     //
-    // creating bins
-    //
-    double diameter = 2 * cutoff;
-    int dim = (int)ceil(size / diameter);
-    vector<int> bin[dim][dim];
-
-
-    //
     //  simulate a number of time steps
     //
     double simulation_time = read_timer( );
@@ -57,59 +45,15 @@ int main( int argc, char **argv )
 	    navg = 0;
         davg = 0.0;
 	    dmin = 1.0;
-
-        //
-        //  binning
-        //
-        for( int i = 0; i < n; i++ )
-        {
-            int row = (int)floor(particles[i].x / diameter);
-            int col = (int)floor(particles[i].y / diameter);
-            bin[row][col].push_back(i);
-
-        }
-
-        
-        for( int i = 0; i < n; i++ )
-        {
-            particles[i].ax = particles[i].ay = 0;
-            int row = (int)floor(particles[i].x / diameter);
-            int col = (int)floor(particles[i].y / diameter);
-            for ( int r = row-1; r < row+1; r++) {
-                for ( int c = col-1; c < col+1; c++) {
-                    if (0<r && r<dim && 0<c && c<dim) {
-                        for (int b = 0; b < bin[row][col].size(); b++) {
-                            int j = bin[row][col][b];
-                            if (i!=j)
-				            apply_force( particles[i], particles[j],&dmin,&davg,&navg);
-                        }
-                    }
-                }
-            }
-        }
-
-        for( int i = 0; i < dim; i++ )
-        {
-            for (int j = 0; j < dim; j++ )
-            {
-                bin[i][j].clear();
-            }
-        }
-
-
         //
         //  compute forces
         //
-        
-
-        /*
         for( int i = 0; i < n; i++ )
         {
             particles[i].ax = particles[i].ay = 0;
             for (int j = 0; j < n; j++ )
 				apply_force( particles[i], particles[j],&dmin,&davg,&navg);
         }
-        */
  
         //
         //  move particles

@@ -1,6 +1,14 @@
 #ifndef __CS267_COMMON_H__
 #define __CS267_COMMON_H__
 
+
+extern double size;
+
+//
+//  tuned constants
+//
+#define cutoff  0.01
+
 inline int min( int a, int b ) { return a < b ? a : b; }
 inline int max( int a, int b ) { return a > b ? a : b; }
 

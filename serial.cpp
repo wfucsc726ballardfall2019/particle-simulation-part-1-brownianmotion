@@ -78,9 +78,8 @@ int main( int argc, char **argv )
             for ( int r = row-1; r < row+1; r++) {
                 for ( int c = col-1; c < col+1; c++) {
                     if (0<r && r<dim && 0<c && c<dim) {
-                        for (int b = 0; b < bin[row][col].size(); b++) {
-                            int j = bin[row][col][b];
-                            if (i!=j)
+                        for (int b = 0; b < bin[r][c].size(); b++) {
+                            int j = bin[r][c][b];
 				            apply_force( particles[i], particles[j],&dmin,&davg,&navg);
                         }
                     }

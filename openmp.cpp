@@ -5,6 +5,9 @@
 #include "common.h"
 #include "omp.h"
 
+#include <vector>
+using namespace std;
+
 //
 //  benchmarking program
 //
@@ -35,6 +38,9 @@ int main( int argc, char **argv )
     set_size( n );
     init_particles( n, particles );
 
+    int dim = (int)ceil(size / cutoff);
+    vector<int> bin[dim][dim];
+
     //
     //  simulate a number of time steps
     //
@@ -47,10 +53,80 @@ int main( int argc, char **argv )
     {
         navg = 0;
         davg = 0.0;
-	dmin = 1.0;
+	    dmin = 1.0;
         //
-        //  compute all forces
+        //  binning
         //
+        #pragma omp for 
+        for ( int i = 0; i < n; i++) {
+            int row = (int)floor(particles[i].x / cutoff);
+            int col = (int)floor(particles[i].y / cutoff);
+            #pragma omp critical
+            bin[row][col].push_back(i);
+        }
+
+        //
+        //  compute all forces (bin by bin)
+        //
+        /*
+        #pragma omp for collapse(2) reduction (+:navg) reduction(+:davg) 
+        for (int row = 0; row < dim; row++) {
+            for (int col = 0; col < dim; col++) {
+                for (int d = 0; d < bin[row][col].size(); d++) {
+                    int i = bin[row][col][d];
+                    particles[i].ax = particles[i].ay = 0;
+                    for(int r = row-1; r<=row+1 && r<dim; r++) {
+                        if (r >= 0) {
+                            for (int c = col-1; c<=col+1 && c<dim; c++) {
+                                if (c >= 0) {
+                                    for (int b = 0; b < bin[r][c].size(); b++) {
+                                        int j = bin[r][c][b];
+				                        apply_force( particles[i], particles[j],&dmin,&davg,&navg);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        */
+
+        //
+        // compute all forces (particle by particle)
+        //
+        #pragma omp for reduction (+:navg) reduction(+:davg) 
+        for( int i = 0; i < n; i++ )
+        {
+            particles[i].ax = particles[i].ay = 0;
+            int row = (int)floor(particles[i].x / cutoff);
+            int col = (int)floor(particles[i].y / cutoff);
+            for ( int r = row-1; r <= row+1 && r < dim; r++) {
+                if (r >= 0) {
+                    for ( int c = col-1; c <= col+1 && c < dim; c++) {
+                        if (c >= 0) {
+                            //printf("r:%d, c:%d\n", r, c);
+                            for (int b = 0; b < bin[r][c].size(); b++) {
+                                int j = bin[r][c][b];
+				                apply_force( particles[i], particles[j],&dmin,&davg,&navg);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+        #pragma omp for collapse(2)
+        for( int i = 0; i < dim; i++ )
+        {
+            for (int j = 0; j < dim; j++ )
+            {
+                bin[i][j].clear();
+            }
+        }
+        
+        /*
         #pragma omp for reduction (+:navg) reduction(+:davg)
         for( int i = 0; i < n; i++ )
         {
@@ -58,6 +134,7 @@ int main( int argc, char **argv )
             for (int j = 0; j < n; j++ )
                 apply_force( particles[i], particles[j],&dmin,&davg,&navg);
         }
+        */
         
 		
         //

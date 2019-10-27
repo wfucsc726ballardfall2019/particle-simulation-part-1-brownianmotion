@@ -41,11 +41,18 @@ int main( int argc, char **argv )
     //
     double simulation_time = read_timer( );
 
+
+    //once again, we need our buckets
+
     double size = sqrt( 0.0005 * n );
-    int buckets_dim = ceil(size/(2*0.01));
-    std::vector<int> buckets[buckets_dim][buckets_dim];
+    int buckets_dim = ceil(size/(0.01));
+    std::vector<int> bucket_to_particle[buckets_dim][buckets_dim];
+    //and our inverse operator
+
+    int particle_to_bucket[n];
 
 
+    //recruit of team of (somehow slow!?!!?) threads
     #pragma omp parallel  private(dmin)
     {
     numthreads = omp_get_num_threads();
@@ -54,40 +61,30 @@ int main( int argc, char **argv )
         navg = 0;
         davg = 0.0;
 	    dmin = 1.0;
-        double temp = read_timer();
-        //
-        //  compute all forces
-        //
-        // #pragma omp for reduction (+:navg) reduction(+:davg)
-        // for( int i = 0; i < n; i++ )
-        // {
-        //     particles[i].ax = particles[i].ay = 0;
-        //     for (int j = 0; j < n; j++ )
-        //         apply_force( particles[i], particles[j],&dmin,&davg,&navg);
-        // }
+        int xbucket;
+        int ybucket;
+        int xmin,xmax,ymin,ymax;
         
 
-
+        //we can completely parallelize the binning process...
         #pragma omp for
         for ( int i = 0; i < n; i++)
         {   
-            
             particles[i].ax = particles[i].ay = 0;
-            int xbucket = floor(particles[i].x/(2*0.01));
-            int ybucket = floor(particles[i].y/(2*0.01));
+            xbucket = floor(particles[i].x/(0.01));
+            ybucket = floor(particles[i].y/(0.01));
+            particle_to_bucket[i] = xbucket*buckets_dim + ybucket;
+            //except when we write to the linked lists; need to be careful not to double write.
             #pragma omp critical
-            buckets[xbucket][ybucket].push_back(i);
-           
-        }
+            bucket_to_particle[xbucket][ybucket].push_back(i);
+        }   
 
- 
-        #pragma omp for collapse(2) reduction (+:navg) reduction(+:davg)
-        for( int xbucket = 0; xbucket < buckets_dim; xbucket ++){
-            for( int ybucket = 0; ybucket < buckets_dim; ybucket ++){
-                for(int k = 0; k < buckets[xbucket][ybucket].size(); k++){
-               
-                    int i = buckets[xbucket][ybucket].at(k);
-                    int xmin,xmax,ymin,ymax;
+        //we can also completely parallelize the update loop; they are all independent
+        #pragma omp for reduction (+:navg) reduction(+:davg)
+        for( int i=0; i< n; i++){
+                xbucket = particle_to_bucket[i] / buckets_dim;
+                ybucket = particle_to_bucket[i] % buckets_dim;     
+                    
                     if(xbucket > 0){xmin = -1;}
                     else{ xmin = 0;}
                     if(xbucket < buckets_dim-1){ xmax = 1;}
@@ -97,34 +94,33 @@ int main( int argc, char **argv )
                     else{ ymin = 0;}
                     if(ybucket < buckets_dim-1){ ymax = 1;}
                     else{ ymax = 0;}
+
                     for( int nbucketx = xmin; nbucketx <= xmax; nbucketx++){
                         for( int nbuckety = ymin; nbuckety <= ymax; nbuckety++){
 
-                            for(int l = 0; l < buckets[xbucket+nbucketx][ybucket+nbuckety].size(); l++){
-                                if(l != k || nbucketx!= 0 || nbuckety != 0){
+                            for(int l = 0; l < bucket_to_particle[xbucket+nbucketx][ybucket+nbuckety].size(); l++){
                                     
-                                    
-                                    
-                                    apply_force(particles[i],particles[buckets[xbucket+nbucketx][ybucket+nbuckety].at(l)],&dmin,&davg,&navg);
-                                }
-                                
+                                    apply_force(particles[i],particles[bucket_to_particle[xbucket+nbucketx][ybucket+nbuckety].at(l)],&dmin,&davg,&navg);                            
                             }
 
                         }
                     }
 
-                }
-            }
-            
-        }
 
-        #pragma omp for collapse(2)
-        for( int xbucket = 0; xbucket < buckets_dim; xbucket ++){
-                for( int ybucket = 0; ybucket < buckets_dim; ybucket ++){  
-                    buckets[xbucket][ybucket].clear();
-                }
             }
 
+        //and the bucket-emptying is parallelizable as well.
+        #pragma omp for
+        for( int bucket_id=0; bucket_id < buckets_dim * buckets_dim; bucket_id ++){
+                xbucket = bucket_id / buckets_dim;
+                ybucket = bucket_id % buckets_dim;
+                bucket_to_particle[xbucket][ybucket].clear();
+            }
+
+
+
+        //from here down, the code is unchanged.
+        //where is the slowdown???? It still runs, just not fast...
 
 
 		

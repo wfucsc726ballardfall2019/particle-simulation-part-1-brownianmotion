@@ -41,9 +41,19 @@ int main( int argc, char **argv )
     //
     double simulation_time = read_timer( );
 
+
+
+
+
+
+    ///we need to make some buckets to hold our particles. Use a 2D array of vectors of appropriate size.
+
     double size = sqrt( 0.0005 * n );
-    int buckets_dim = ceil(size/(2*0.01));
-    std::vector<int> buckets[buckets_dim][buckets_dim];
+    int buckets_dim = ceil(size/(0.01));
+    std::vector<int> bucket_to_particle[buckets_dim][buckets_dim];
+
+    //we are also going to need the inverse; takes partice number to bucket it belongs to. (we do natural linear indexing on the 2D bucket array)
+    int particle_to_bucket[n];
 
 
     for( int step = 0; step < NSTEPS; step++ )
@@ -54,22 +64,26 @@ int main( int argc, char **argv )
 
         //
         //  compute forces
-        //
+        // Here we use our buckets, to update the particles
+        
 
+        //first, bin the particles
         for ( int i = 0; i < n; i++)
         {   
             particles[i].ax = particles[i].ay = 0;
-            int xbucket = floor(particles[i].x/(2*0.01));
-            int ybucket = floor(particles[i].y/(2*0.01));
-            buckets[xbucket][ybucket].push_back(i);
+            int xbucket = floor(particles[i].x/(0.01));
+            int ybucket = floor(particles[i].y/(0.01));
+            //add to bucket
+            bucket_to_particle[xbucket][ybucket].push_back(i);
+            // and record bucket number
+            particle_to_bucket[i] = xbucket*buckets_dim + ybucket;
         }
 
-        
-        for( int xbucket = 0; xbucket < buckets_dim; xbucket ++){
-            for( int ybucket = 0; ybucket < buckets_dim; ybucket ++){
-                for(int k = 0; k < buckets[xbucket][ybucket].size(); k++){
-
-                    int i = buckets[xbucket][ybucket].at(k);
+        //Now, go through each particle and apply force from particles in neighboring buckets
+            for( int i=0; i< n; i++){
+                int xbucket = particle_to_bucket[i] / buckets_dim;
+                int ybucket = particle_to_bucket[i] % buckets_dim;     
+                // really annoying edge-case stuff. We can only access neighbor buckets if we are in the interior
                     int xmin,xmax,ymin,ymax;
                     if(xbucket > 0){xmin = -1;}
                     else{ xmin = 0;}
@@ -80,47 +94,31 @@ int main( int argc, char **argv )
                     else{ ymin = 0;}
                     if(ybucket < buckets_dim-1){ ymax = 1;}
                     else{ ymax = 0;}
-                    //printf("%d %d %d %d\n",xmin, xmax, ymin, ymax);
+                    //for all the neighboring buckets
                     for( int nbucketx = xmin; nbucketx <= xmax; nbucketx++){
                         for( int nbuckety = ymin; nbuckety <= ymax; nbuckety++){
-                            //printf("%d %d %d\n",nbucketx,nbucketx,buckets[xbucket+nbucketx][ybucket+nbuckety].size());
-                            for(int l = 0; l < buckets[xbucket+nbucketx][ybucket+nbuckety].size(); l++){
-                                if(l != k || nbucketx!= 0 || nbuckety != 0){
-                                    
-                                    //printf("applying some force %d %d %d %d\n",l,k,nbuckety,nbucketx);
-                                    
-                                    apply_force(particles[i],particles[buckets[xbucket+nbucketx][ybucket+nbuckety].at(l)],&dmin,&davg,&navg);
-                                }
-                                
+                            //for all the particles in those buckets
+                            for(int l = 0; l < bucket_to_particle[xbucket+nbucketx][ybucket+nbuckety].size(); l++){
+                                    //aply force
+                                    apply_force(particles[i],particles[bucket_to_particle[xbucket+nbucketx][ybucket+nbuckety].at(l)],&dmin,&davg,&navg);                            
                             }
 
                         }
                     }
 
-                }
+                
             }
             
-        }
+        //then go back and empty those buckets
         for( int xbucket = 0; xbucket < buckets_dim; xbucket ++){
                 for( int ybucket = 0; ybucket < buckets_dim; ybucket ++){  
-                    buckets[xbucket][ybucket].clear();
+                    bucket_to_particle[xbucket][ybucket].clear();
                 }
             }
 
 
+        //from here down, the code is unchanged
 
-
-
-        // for( int i = 0; i < n; i++ )
-        // {
-        //     particles[i].ax = particles[i].ay = 0;
-        //     for (int j = 0; j < n; j++ )
-		// 		apply_force( particles[i], particles[j],&dmin,&davg,&navg);
-        // }
- 
-        //
-        //  move particles
-        //
         for( int i = 0; i < n; i++ ) 
             move( particles[i] );		
 

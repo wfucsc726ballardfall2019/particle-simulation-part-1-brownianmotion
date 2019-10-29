@@ -1,6 +1,7 @@
 #!/bin/bash -l
 #SBATCH -p small            
 #SBATCH -N 1                # you'll never need more than 1 node for the openmp code
+#SBATCH --tasks-per-node=44
 #SBATCH -t 00:20:00         # adjust the amount of time as necessary
 #SBATCH -J auto-openmp
 #SBATCH -o auto-openmp.%j.stdout
@@ -29,15 +30,15 @@ srun -n 1 -c 44 ./openmp -p 44 -n 500 -no -s openmp.txt
 export OMP_NUM_THREADS=2
 srun -n 1 -c 2 ./openmp -p 2 -n 1000 -no -s openmp.txt
 export OMP_NUM_THREADS=4
-srun -n 1 -c 4./openmp -p 4 -n 2000 -no -s openmp.txt
+srun -n 1 -c 4 ./openmp -p 4 -n 2000 -no -s openmp.txt
 export OMP_NUM_THREADS=6
-srun -n 1 -c 6./openmp -p 6 -n 3000 -no -s openmp.txt
+srun -n 1 -c 6 ./openmp -p 6 -n 3000 -no -s openmp.txt
 export OMP_NUM_THREADS=8
 srun -n 1 -c 8 ./openmp -p 8 -n 4000 -no -s openmp.txt
 export OMP_NUM_THREADS=16
-srun -n 1 -c 16./openmp -p 16 -n 8000 -no -s openmp.txt
+srun -n 1 -c 16 ./openmp -p 16 -n 8000 -no -s openmp.txt
 export OMP_NUM_THREADS=32
-srun -n 1 -c 32./openmp -p 32 -n 16000 -no -s openmp.txt
+srun -n 1 -c 32 ./openmp -p 32 -n 16000 -no -s openmp.txt
 export OMP_NUM_THREADS=44
 srun -n 1 -c 44 ./openmp -p 44 -n 22000 -no -s openmp.txt
 ./autograder -v openmp -s openmp.txt

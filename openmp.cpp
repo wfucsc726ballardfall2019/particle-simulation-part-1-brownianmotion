@@ -39,8 +39,16 @@ int main( int argc, char **argv )
     init_particles( n, particles );
 
     int dim = (int)ceil(size / cutoff);
-    vector<int> bin[dim][dim];
-    omp_lock_t locks[dim][dim];
+    vector<int>** bin = new vector<int>*[dim];
+    for (int i = 0; i < dim; i++) {
+        bin[i] = new vector<int>[dim];
+    }
+
+    omp_lock_t** locks = new omp_lock_t*[dim];
+    for (int i = 0; i < dim; i++) {
+        locks[i] = new omp_lock_t[dim];
+    }
+
     for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {
             omp_init_lock(&locks[i][j]);
@@ -211,6 +219,17 @@ int main( int argc, char **argv )
     //
     // Clearing space
     //
+
+    for (int i = 0; i < dim; i++) {
+        delete[] locks[i];
+    }
+    delete[] locks;
+
+    for (int i = 0; i < dim; i++) {
+        delete[] bin[i];
+    }
+    delete[] bin;
+
     if( fsum )
         fclose( fsum );
 

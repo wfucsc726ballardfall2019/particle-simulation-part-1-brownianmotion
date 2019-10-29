@@ -40,12 +40,17 @@ int main( int argc, char **argv )
 
     int dim = (int)ceil(size / cutoff);
     vector<int> bin[dim][dim];
+    omp_lock_t locks[dim][dim];
+    for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+            omp_init_lock(&locks[i][j]);
+        }
+    }
 
     //
     //  simulate a number of time steps
     //
     double simulation_time = read_timer( );
-
     #pragma omp parallel private(dmin) 
     {
     numthreads = omp_get_num_threads();
@@ -57,12 +62,15 @@ int main( int argc, char **argv )
         //
         //  binning
         //
-        #pragma omp for 
+        int row = 0;
+        int col = 0;
+        #pragma omp for
         for ( int i = 0; i < n; i++) {
-            int row = (int)floor(particles[i].x / cutoff);
-            int col = (int)floor(particles[i].y / cutoff);
-            #pragma omp critical
+            row = (int)floor(particles[i].x / cutoff);
+            col = (int)floor(particles[i].y / cutoff);
+            omp_set_lock(&locks[row][col]);
             bin[row][col].push_back(i);
+            omp_unset_lock(&locks[row][col]);
         }
 
         //
@@ -167,6 +175,12 @@ int main( int argc, char **argv )
         }
     }
 }
+
+    for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+            omp_destroy_lock(&locks[i][j]);
+        }
+    }
     simulation_time = read_timer( ) - simulation_time;
     
     printf( "n = %d,threads = %d, simulation time = %g seconds", n,numthreads, simulation_time);

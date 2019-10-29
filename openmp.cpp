@@ -59,6 +59,7 @@ int main( int argc, char **argv )
         navg = 0;
         davg = 0.0;
 	    dmin = 1.0;
+
         //
         //  binning
         //
@@ -76,7 +77,6 @@ int main( int argc, char **argv )
         //
         //  compute all forces (bin by bin)
         //
-        /*
         #pragma omp for collapse(2) reduction (+:navg) reduction(+:davg) 
         for (int row = 0; row < dim; row++) {
             for (int col = 0; col < dim; col++) {
@@ -98,8 +98,8 @@ int main( int argc, char **argv )
                 }
             }
         }
-        */
 
+        /*
         //
         // compute all forces (particle by particle)
         //
@@ -123,6 +123,7 @@ int main( int argc, char **argv )
                 }
             }
         }
+        */
 
 
         #pragma omp for collapse(2)

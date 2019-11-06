@@ -12,4 +12,5 @@ srun -n 1 -c 1 ./serial -n 1000 -no -s serial.txt
 srun -n 1 -c 1 ./serial -n 2000 -no -s serial.txt
 srun -n 1 -c 1 ./serial -n 4000 -no -s serial.txt
 srun -n 1 -c 1 ./serial -n 8000 -no -s serial.txt
+srun -n 1 -c 1 ./serial -n 16000 -no -s serial.txt
 ./autograder -v serial -s serial.txt

@@ -1,0 +1,20 @@
+Feedback
+
+Serial
+ - Explanation: Clear explanation.
+ - Implementation:  Used 2D array of vectors for bins/buckets.  One version of code uses stack array, another puts it on the heap.
+ - Results: Linear complexity achieved.
+34/34
+
+OpenMP
+ - Explanation: Explanation is fairly clear, parallelization indeed is straightforward, except for the discussion of critical sections and locks.  A critical section means only one thread can execute the code at a time, a lock means only one thread can set/unset the lock.  If you create a lock on each bin/bucket, then multiple threads can update different buckets concurrently; using a critical section is like putting one lock on the whole 3D data structure, which totally serializes the binning procedure.
+ - Implementation: Used #pragma omp critical on bin push, which was the primary cause of parallel slowdown.
+ - Results: Because of performance bug in implementation, results showed slow down in general.
+22/33
+
+MPI
+ - Explanation: Looks like the progress was made piecemeal, the writeup doesn't match the code and the repo branches weren't ever merged.
+ - Implementation: The latest version of the code seems to work for a perfect square number of processors (seg faults otherwise).  The code is hard to follow, but based on the writeup it sounds like the goal is to all-gather all border particles, so that each processor receives something like sqrt(n) particles as opposed to all n.  The communication pattern is Send/Recv instead of AllGather, which I don't follow.
+ - Results: I've observed reasonable speedup going from 1 to 4 to 9 processors with n=20000 (16 processes was marginally better than 9).
+25/33
+

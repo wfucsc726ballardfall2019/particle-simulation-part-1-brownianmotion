@@ -11,6 +11,7 @@ OpenMP
  - Implementation: Used #pragma omp critical on bin push, which was the primary cause of parallel slowdown.
  - Results: Because of performance bug in implementation, results showed slow down in general.
 22/33
+* (Updated 12/14) OpenMP implementation did use locks instead of critical section, just in another branch of the repo.  Poor scaling reported was because the problem size was too small.  I observed reasonable scaling for 2000 or more particles. +4 points in this section
 
 MPI
  - Explanation: Looks like the progress was made piecemeal, the writeup doesn't match the code and the repo branches weren't ever merged.
